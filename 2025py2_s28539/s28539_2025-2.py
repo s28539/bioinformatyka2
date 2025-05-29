@@ -119,12 +119,12 @@ class NCBIRetriever:
 
 def main():
     print("🧪 NCBI GenBank Sequence Retriever\n")
-    # email = input("Enter your email address for NCBI: ")
-    # api_key = input("Enter your NCBI API key: ")
-    # taxid = input("Enter taxonomic ID (taxid): ")
-    email = "s28539@pjwstk.edu.pl"
-    api_key = "ba7a640fb0abc6bb839be42d04971e380608"
-    taxid = 9606
+    email = input("Enter your email address for NCBI: ")
+    api_key = input("Enter your NCBI API key: ")
+    taxid = input("Enter taxonomic ID (taxid): ")
+    # email = "s28539@pjwstk.edu.pl"
+    # api_key = "ba7a640fb0abc6bb839be42d04971e380608"
+    # taxid = 9606
 
     try:
         min_len = int(input("Minimum sequence length (bp): "))
