@@ -21,15 +21,16 @@ class NCBIRetriever:
         Entrez.api_key = api_key
         Entrez.tool = 'EnhancedRetriever'
 
-    def search_taxid(self, taxid):
-        print(f"🔍 Searching for records with taxID: {taxid}")
+    def search_taxid(self, taxid, min_len, max_len):
+        print(f"🔍 Searching for records with taxID: {taxid} and length {min_len}-{max_len} bp")
         try:
             handle = Entrez.efetch(db="taxonomy", id=taxid, retmode="xml")
             records = Entrez.read(handle)
             organism_name = records[0]["ScientificName"]
             print(f"🧬 Organism: {organism_name} (TaxID: {taxid})")
 
-            search_term = f"txid{taxid}[Organism]"
+            # ✅ Search term with sequence length filter
+            search_term = f"txid{taxid}[Organism] AND {min_len}:{max_len}[Sequence Length]"
             handle = Entrez.esearch(db="nucleotide", term=search_term, usehistory="y")
             search_results = Entrez.read(handle)
             count = int(search_results["Count"])
@@ -98,19 +99,26 @@ class NCBIRetriever:
         accessions = [r.id for r in sorted_records]
         lengths = [len(r.seq) for r in sorted_records]
 
-        # Wykres
-        plt.figure(figsize=(max(10, len(accessions) * 0.4), 6))
-        plt.plot(accessions, lengths, marker='o', linestyle='-')
+        plt.figure(figsize=(max(12, len(accessions) * 0.5), 6))  # dynamic width
 
-        # Dynamiczne ograniczenie liczby etykiet na osi X
-        step = max(1, len(accessions) // 20)
-        xticks = range(0, len(accessions), step)
-        xticklabels = [accessions[i] for i in xticks]
-        plt.xticks(xticks, xticklabels, rotation=90, fontsize=6)
+        # Wykres liniowy + punkty
+        x_positions = list(range(len(accessions)))
+        plt.plot(x_positions, lengths, linestyle='-', color='skyblue', label='Length')
+        plt.scatter(x_positions, lengths, color='blue', s=40, zorder=3, label='Points')
+
+        # Etykiety X: wszystkie accession IDs
+        plt.xticks(x_positions, accessions, rotation=90, fontsize=6)
 
         plt.xlabel("GenBank Accession Number")
         plt.ylabel("Sequence Length (bp)")
         plt.title("Sequence Lengths by Accession (sorted)")
+        plt.grid(True, linestyle='--', alpha=0.4)
+
+        # Opcjonalnie: długości nad punktami jeśli <= 25 rekordów
+        if len(records) <= 25:
+            for i, length in enumerate(lengths):
+                plt.text(i, length + 20, str(length), ha='center', va='bottom', fontsize=7, rotation=45)
+
         plt.tight_layout()
         plt.savefig(filename)
         plt.close()
@@ -119,12 +127,12 @@ class NCBIRetriever:
 
 def main():
     print("🧪 NCBI GenBank Sequence Retriever\n")
-    email = input("Enter your email address for NCBI: ")
-    api_key = input("Enter your NCBI API key: ")
-    taxid = input("Enter taxonomic ID (taxid): ")
-    # email = "s28539@pjwstk.edu.pl"
-    # api_key = "ba7a640fb0abc6bb839be42d04971e380608"
-    # taxid = 9606
+    # email = input("Enter your email address for NCBI: ")
+    # api_key = input("Enter your NCBI API key: ")
+    # taxid = input("Enter taxonomic ID (taxid): ")
+    email = "s28539@pjwstk.edu.pl"
+    api_key = "ba7a640fb0abc6bb839be42d04971e380608"
+    taxid = 9606
 
     try:
         min_len = int(input("Minimum sequence length (bp): "))
@@ -136,7 +144,7 @@ def main():
 
     retriever = NCBIRetriever(email, api_key)
 
-    if not retriever.search_taxid(taxid):
+    if not retriever.search_taxid(taxid, min_len, max_len):
         return
 
     print("\n📡 Fetching records from NCBI...")
